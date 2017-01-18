@@ -11,6 +11,5 @@ extensions = [
 ]
 
 setup(
-    name = "my_cython_fd_lap",
     ext_modules = cythonize(extensions, annotate=True),
 )
