@@ -20,12 +20,13 @@ def sgpe(dt, Nx, Ny, Nz, Nt):
 	space = space.reshape(3,-1).T
 
 	alpha[:,:,:,0] = np.exp(-space**2. /2)
-	d2alpha = laplacian.laplacianFD3dcomplex(alpha, xx, yy, zz)
+	d2alpha = laplacian.laplacianFD3dcomplex(alpha, xx[1]-xx[0], yy[1]-yy[0], zz[1]-zz[0])
 
 	pot = space**2 /2.0
 
 	
 	for i in range(1,Nt):
+		d2alpha = laplacian.laplacianFD3dcomplex(alpha[:,:,:,i], xx[1]-xx[0], yy[1]-yy[0], zz[1]-zz[0])
 		alpha[:,:,:,i] = (-1j-1/(kb*T))* (-d2alpha[:,:,:,i-1] + pot* alpha[:,:,:,i-1]) *dt + sqrt(dt)* np.random.normal(0,1)
 	
 	return alpha

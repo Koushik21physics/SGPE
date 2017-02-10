@@ -3,13 +3,15 @@
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 import numpy
 
 extensions = [
     Extension("cython_finite_diff_lap", ["cython_finite_diff_lap.pyx"],
-                include_dirs = [numpy.get_include()]),
+                include_dirs = [numpy.get_include()]
+		),
 ]
 
 setup(
-    ext_modules = cythonize(extensions, annotate=True),
+    ext_modules = cythonize(extensions),
 )
