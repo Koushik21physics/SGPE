@@ -3,41 +3,50 @@ from matplotlib import pyplot as plt
 from roots_test import h_roots_recursive, hermite_on
 import odespy as os
 
-nbase = 40
+nbase = 86
 lamda = 100
-T = 100
-dt = 0.005
-tsteps = T/0.005
-h = 1
-Nx = 256
-x_low = -8.
-x_up = 8.
-x_grid = np.linspace(x_low,x_up,Nx)
+T = 500
+dt = 0.0015
+tsteps = T/dt
+h = np.arange(nbase+1)+ 1/2.
+Nx = 100
+x_low = -3.
+x_up = 3.
+
+x_grid = np.linspace(x_low, x_up, Nx)
 
 C_init = np.zeros(nbase+1)+ 0j
-C_init[0] = 1
+C_init[0] = 1+0j
 
 x1, w1 = h_roots_recursive(2*nbase+1)
 
 def effOfC(n, x, w, wave_init):
-    P_nk = np.zeros((n+1,2*n+1))+ 0j
-    eProots = np.exp(-(x**2.)/2)
-    weights = w * eProots
+    Pnk = np.zeros((n+1,2*n+1))+ 0j
+    eProots = np.exp(-(x**2.)/4)
+    wts = w * eProots
 
     for i in xrange(n+1):
-        P_nk[i,] = hermite_on(i)(x1) * eProots
+        Pnk[i,] = hermite_on(i)(x/np.sqrt(2)) * eProots
 
-    psi = np.dot(P_nk.T, wave_init)
+    #psi = np.dot(Pnk.T, wave_init)
 
-    xi = weights * abs(psi)**2. * psi
-    effC = np.dot(P_nk, xi)
-    return effC
+    #xi = wts * abs(psi)**2. * psi
+    #effC = np.dot(Pnk, xi)
+    return Pnk, wts 
+    #return effC
 
-effC = effOfC(nbase, x1, w1, C_init)
 
-def rk4(wave_init, h, lamda, eff_C, Tmax, Nt):
+P_nk, weights = effOfC(nbase, x1,w1, C_init)
+#effC = effOfC(nbase, x1, w1, C_init)
+
+
+
+def rk4(wave_init, h, lamda, Pnk, wts, Tmax, Nt):
     def f(u,t):
-        return -1j* (h*u+ lamda * eff_C)
+        psi = np.dot(Pnk.T, u)
+        xi = wts * abs(psi)**2. * psi
+        effC = np.dot(Pnk, xi)
+        return -1j* (h*u+ lamda * effC)
 
     solver = os.RK4(f, complex_valued = True)
     solver.set_initial_condition(wave_init)
@@ -46,24 +55,24 @@ def rk4(wave_init, h, lamda, eff_C, Tmax, Nt):
     u, t = solver.solve(time_points)
     return u, t
 
-y, t = rk4(C_init, h, lamda, effC, T, tsteps)
+y, t = rk4(C_init, h, lamda, P_nk, weights, T, tsteps)
 
 def phi(n, x_space):
     phi_n = np.zeros((n+1, len(x_space))) + 0j
     for i in xrange(n+1):
-        phi_n[i,:] = hermite_on(i)(x_space)*np.exp(-(x_space**2.))
+        phi_n[i,:] = hermite_on(i)(x_space)*np.exp(-(2* x_space**2.))
     return phi_n
 
 Phii = phi(nbase, x_grid)
 
 wave_func = np.dot(y,Phii)
-density = np.abs(wave_func)**2.
+density = (np.abs(wave_func))**2.
 
 fig = plt.figure()
 ax1 = fig.add_subplot(211)
 ax1.plot(x_grid, density[tsteps-1,:], 'b-')
 ax2 = fig.add_subplot(212)
-ax2.plot(t, density[:,Nx/2], 'r-')
+ax2.plot(t, density[:,Nx/2-1], 'r-')
 plt.show()
 
 #wave_func = np.sum( u* Phii, axis =1)
